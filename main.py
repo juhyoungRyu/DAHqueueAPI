@@ -4,8 +4,6 @@ import database
 from pydantic import BaseModel
 
 app = FastAPI()
-
-
 PORT = 8000
 
 origins = ["*"]
@@ -24,6 +22,11 @@ app.add_middleware(
 class newClient(BaseModel):
     guest: str
     pet: str
+
+
+class deleteID(BaseModel):
+    one: list
+    two: list
 
 
 @app.get('/wait')
@@ -79,3 +82,67 @@ async def new(newClient: newClient):
         new['id'] = len(db['other']) + 1
         db['other'].append(new)
     return {"message": '정상적으로 등록되었습니다.'}
+
+
+@app.post('/delete')
+async def delete(lists: deleteID):
+    one_sid = 0
+    two_sid = 0
+    db = database.fakeDB
+
+    if lists.one:
+        temp = []
+        db['one'] = filter(lambda item: item['id'] not in lists.one, db['one'])
+
+        for i in db['one']:
+            temp.append(i)
+
+        for i in range(len(temp)):
+            temp[i]['id'] = i + 1
+
+        db['one'] = temp
+
+        one_sid = 5 - len(db['one'])
+
+    if lists.two:
+        temp = []
+        print(lists.two)
+        db['two'] = filter(lambda item: item['id'] not in lists.two, db['two'])
+
+        for i in db['two']:
+            print(i)
+            temp.append(i)
+
+        for i in range(len(temp)):
+            temp[i]['id'] = i + 1
+
+        db['two'] = temp
+        temp = []
+
+        two_sid = 5 - len(db['two'])
+
+    for _ in range(one_sid):
+        if db['two']:
+            temp = []
+            temp.append(db['two'][0])
+            temp[0]['id'] = len(db['one']) + 1
+            del db['two'][0]
+
+            db['one'].append(temp[0])
+
+            for j in db['two']:
+                j['id'] -= 1
+
+    for _ in range(two_sid):
+        if db['other']:
+            temp.append(db['other'][0])
+            temp[0]['id'] = len(db['two']) + 1
+            del db['other'][0]
+
+            db['two'].append(temp[0])
+            del temp[0]
+
+            for j in db['other']:
+                j['id'] -= 1
+
+    return {"message": '정상적으로 삭제되었습니다.'}
